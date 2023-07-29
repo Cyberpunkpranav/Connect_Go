@@ -28,7 +28,7 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println("Client Succesfully Connected")
+	log.Println("Client Successfully Connected")
 	conn := structs.WebSocketConnection{Conn: ws}
 	clients[conn] = ""
 	if err != nil {
@@ -52,7 +52,6 @@ func ListenForWs(conn *structs.WebSocketConnection) {
 			log.Println(err)
 		} else {
 			Payload.Conn = *conn
-			log.Println(Payload.Message)
 			WsChan <- Payload
 		}
 
@@ -65,8 +64,7 @@ func ListenToWsChannel() {
 	var response structs.WsJsonResponse
 	for {
 		e := <-WsChan
-		log.Println(e)
-		response.Action = "Online"
+		log.Println(e.Action)
 		switch e.Action {
 		case "username":
 			clients[e.Conn] = e.Username
@@ -92,6 +90,7 @@ func ListenToWsChannel() {
 }
 func GetUserlist() []string {
 	var userList []string
+	log.Println(clients)
 	for _, x := range clients {
 		if x != "" {
 			userList = append(userList, x)

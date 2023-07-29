@@ -12,7 +12,7 @@ type Database struct {
 func Db_Config() Database {
 	var db Database
 	db.Username = "root"
-	db.Database = "aartas"
+	db.Database = "aartas_uat"
 	db.Password = "MYSQLaccount123"
 	db.Protocol = "tcp"
 	db.Ip_address = "127.0.0.1"
