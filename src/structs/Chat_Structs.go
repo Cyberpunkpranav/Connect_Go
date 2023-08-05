@@ -10,13 +10,14 @@ type WebSocketConnection struct {
 type WsJsonResponse struct {
 	Action         string   `json:"action"`
 	Message        string   `json:"message"`
-	MessageType    string   `json:"message_type"`
+	User           string   `json:"user"`
 	ConnectedUsers []string `json:"connected_users"`
 }
 
 // Websocket request from the Client
 type WsPayload struct {
 	Action   string              `json:"action"`
+	Id       string              `json:"id"`
 	Username string              `json:"username"`
 	Message  string              `json:"message"`
 	Conn     WebSocketConnection `json:"-"`

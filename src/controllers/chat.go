@@ -26,13 +26,23 @@ var upgradeConnection = websocket.Upgrader{
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgradeConnection.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		if websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			fmt.Println("WebSocket connection going away or closed abnormally:", err)
+			ws.Close()
+		} else {
+			log.Println("Error reading message:", err)
+		}
 	}
-	log.Println("Client Successfully Connected")
+
 	conn := structs.WebSocketConnection{Conn: ws}
-	clients[conn] = ""
+	// clients[conn] = ""
 	if err != nil {
-		log.Println(err)
+		if websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			fmt.Println("WebSocket connection going away or closed abnormally:", err)
+			ws.Close()
+		} else {
+			log.Println("Error reading message:", err)
+		}
 	}
 	//Make the Routine for listenting to the websocket from the client
 	go ListenForWs(&conn)
@@ -41,22 +51,24 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 // Listen to the client websocket data and gather all in the channel
 func ListenForWs(conn *structs.WebSocketConnection) {
 	defer func() {
-		if r := recover(); r != nil {
-			log.Println("Error", fmt.Sprintf("Error:%v", r))
+
+		r := recover()
+		if r != nil {
+			log.Println(r)
 		}
 	}()
+
 	var Payload structs.WsPayload
+
 	for {
 		err := conn.ReadJSON(&Payload)
 		if err != nil {
-			log.Println(err)
+			conn.Conn.Close()
 		} else {
 			Payload.Conn = *conn
 			WsChan <- Payload
 		}
-
 	}
-
 }
 
 // Broadcast gathered data in the channel
@@ -64,33 +76,32 @@ func ListenToWsChannel() {
 	var response structs.WsJsonResponse
 	for {
 		e := <-WsChan
-		log.Println(e.Action)
+		// log.Println(e.Username, e.Message, e.Action, e.Id)
 		switch e.Action {
 		case "username":
 			clients[e.Conn] = e.Username
 			users := GetUserlist()
-			log.Println(users)
 			response.Action = "UserLists"
 			response.ConnectedUsers = users
 			BroadcastToAll(response)
 
 		case "left":
-			response.Action = "UserList"
+			response.Action = "UserLists"
 			delete(clients, e.Conn)
 			users := GetUserlist()
 			response.ConnectedUsers = users
 			BroadcastToAll(response)
 
 		case "broadcast":
-			response.Action = "broadcast"
-			response.Message = fmt.Sprintf("%s:%s", e.Username, e.Message)
+			response.Action = "Broadcast"
+			response.User = e.Username
+			response.Message = e.Message
 			BroadcastToAll(response)
 		}
 	}
 }
 func GetUserlist() []string {
 	var userList []string
-	log.Println(clients)
 	for _, x := range clients {
 		if x != "" {
 			userList = append(userList, x)
@@ -98,6 +109,7 @@ func GetUserlist() []string {
 
 	}
 	sort.Strings(userList)
+	log.Println(userList)
 	return userList
 }
 
@@ -107,9 +119,8 @@ func BroadcastToAll(response structs.WsJsonResponse) {
 	for client := range clients {
 		err := client.WriteJSON(response)
 		if err != nil {
-			log.Println("err")
 			_ = client.Close()
 			delete(clients, client)
-		}
+		}	
 	}
 }
