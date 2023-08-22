@@ -8,7 +8,11 @@ type Database struct {
 	Port       string
 	Ip_address string
 }
-
+type Database_Redis struct{
+	Username string
+	Password string
+	Address string
+}
 func Db_Config() Database {
 	var db Database
 	db.Username = "root"
@@ -19,3 +23,8 @@ func Db_Config() Database {
 	db.Port = "3306"
 	return db
 }
+
+// func Redis_DB()Database_Redis{
+// 	var db.DatavaseDatabase_Redis
+// 	db.Username = ""
+// }
